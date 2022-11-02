@@ -6,6 +6,13 @@ import androidx.lifecycle.ViewModelProvider;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.Toast;
+
+import com.bumptech.glide.Glide;
 
 import org.json.JSONObject;
 
@@ -19,6 +26,10 @@ import java.net.URL;
 public class MainActivity extends AppCompatActivity {
 
 
+    private ImageView imageViewDog;
+    private Button buttonLoadImage;
+    private ProgressBar progressBar;
+
     private static final String TAG = "MainActivity";
 
     private MainViewModel viewModel;
@@ -27,13 +38,50 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        initViews();
         viewModel = new ViewModelProvider(this).get(MainViewModel.class);
         viewModel.loadDogImage();
+        viewModel.getIsError().observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean isError) {
+                if (isError) {
+                    Toast.makeText(
+                            MainActivity.this,
+                            "No internet",
+                            Toast.LENGTH_SHORT)
+                            .show();
+                }
+            }
+        });
+        viewModel.getIsLoading().observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean loading) {
+                if (loading) {
+                    progressBar.setVisibility(View.VISIBLE);
+                } else {
+                    progressBar.setVisibility(View.GONE);
+                }
+            }
+        });
         viewModel.getDogImage().observe(this, new Observer<DogImage>() {
             @Override
             public void onChanged(DogImage dogImage) {
-                Log.d(TAG, dogImage.toString());
+                Glide.with(MainActivity.this)
+                        .load(dogImage.getMessage())
+                        .into(imageViewDog);
             }
         });
+        buttonLoadImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                viewModel.loadDogImage();
+            }
+        });
+    }
+
+    private void initViews() {
+        imageViewDog = findViewById(R.id.imageViewDog);
+        buttonLoadImage = findViewById(R.id.buttonLoadImage);
+        progressBar = findViewById(R.id.progressBar);
     }
 }
